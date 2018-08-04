@@ -1,0 +1,197 @@
+
+* Server
+
+** Tasks
+
+*** TODO Integrate Shibboleth authentication
+
+Who is our point of contact to integrate UMD auth?
+
+*** TODO Student submission
+
+**** Manually submitted code
+
+Where should the submitted archives be stored? MongoDB has a
+16MB limit on document size, so it won't do for all purposes.
+
+**** GitLab integration
+
+*** TODO Testing workflow
+
+1. Allow professors to submit a Docker container for a
+   particular assignment.
+2. Place submitted code on a queue to be spun up.
+3. Store output from executing the submitted code in the
+   test container.
+
+** Environment Variables
+
+[[./backend/.env][Set in the backend dotenv file]]
+
+These environment variables must be set:
+- PORT -- the port on which to run the server
+- DB_URI -- the MongoDB URI
+- SESSION_SECRET -- secret used by client-sessions
+- DEBUG -- * for full debug logging, empty for none
+
+** Persistent Data
+
+The submit server data is stored in MongoDB as the following
+collections.
+
+The schemata are defined [[./backend/model/schema.js][here]].
+
+The DB connection is initialized [[./backend/model/index.js][here]].
+
+Data for use in development is initialized [[./backend/bin/initDB][here]]
+  and executed with `npm run init'.
+
+*** User
+
+A user has a username, a (display) name, a default role, and
+an array of courses to which they have access.
+
+The User schema will likely need to be extended to support
+shibboleth authentication, the username is a stand-in for any
+identifying information we will need to store.
+
+A user's level of access to the content of some course is
+determined by their courses document role:
+- 'admin'   -- full access to the submit server data;
+- 'prof'    -- read/write access to their course TA roster,
+               read/write access to their course assignments,
+               read access to their course student submissions;
+- 'ta'      -- read/write access to their course assignments,
+               read access to their course student submissions;
+- 'student' -- read access to their course assignments,
+               read/create access to their submissions.
+
+Since some students may TA for one course and be enrolled as a
+student in another, roles must be defined on a per-course
+basis.
+
+*** Course
+
+A course has a name, course number (e.g. 'cmsc430'), and an
+array of defined assignments.
+
+*** Assignment
+
+An assignment has a name, a due date, a boolean flag listing
+whether the assignment is already visible to students, and an
+array of submissions received from students.
+
+Assignments will also need to store information about how
+testing will be performed on student submissions, such as a
+reference to a docker instance stored in our private registry.
+
+*** Submission
+
+A submission has an associated user, the date at which the
+submission was made, the submitted input, and the output as a
+result of testing the submission.
+
+The submission input will be one of:
+- GitLab commit which incited the submission event, or a
+- File reference to a manually submitted archive.
+
+TODO:
+Since MongoDB has a maximum document size of 16MB, manually
+submitted archives must be stored external to the
+database.
+
+** Routes
+
+*** [[./backend/routes/index.js][Index]]
+
+GET of the index should eventually describe the API.
+
+*** [[./backend/routes/auth.js][Auth]]
+
+The authentication routes are a temporary stand-in for what
+will eventually handle the Shibboleth session maintenance and
+mapping to the submit server permissions and state.
+
+Session state is stored using encrypted client
+cookies. Clients request a JSON authentication token that
+describes the user and the courses/roles to which they have
+access via the '/api/check' route.
+
+As currently implemented, the '/api/login' route allows login
+by username alone, as long as the username matches some
+existing user. This is for development purposes only.
+
+*** [[./backend/routes/model.js][Model]]
+
+The model CRUD routes are dynamically generated based on the
+Mongoose models.
+
+Still TODO: configure validation middleware to ensure only
+authorized users may use certain verbs.
+
+* Client
+
+** Tasks
+
+*** Client operations on persistent state
+
+**** TODO Admins
+
+Allow admins to:
+- define classes and users
+
+Can the users be imported automatically from some
+authoritative source, i.e. grades.cs.umd.edu?
+
+**** TODO Professors
+
+Define assignments, TAs.
+
+**** TODO Students
+
+Manually submit code to some assignment
+
+*** TODO Shibboleth authentication integration
+
+*** TODO Style the web client to be accessible, clear, and concise
+
+
+** [[./clients/web/src/components/Auth.js][Auth]]
+
+The client-side authentication and authorization session and
+operations are maintained by a React Context. The context
+is responsible for checking the current authentication state
+on mount, and provides the session token and useful operations
+to any consumer.
+
+The higher-order component `withAuth' wraps any component in
+an authentication consumer, which exposes the session token
+and authentication operations to the component via its props.
+
+The component `PrivateRoute' describes components that are
+only available to logged in users, causing a redirect to the
+login page if an attempt to access protected information is
+made by an unauthenticated user.
+
+** Pages
+
+*** [[./clients/web/src/pages/Courses.js][Courses]]
+
+Displays the courses to which a user has access.
+
+*** [[./clients/web/src/pages/Course.js][Course]]
+
+Displays the details of a single course.
+
+**** TODO Allow ta/prof to define assignments, edit course details
+
+*** [[./clients/web/src/pages/Assignment.js][Assignment]]
+
+Display the details of a single assignment.
+
+**** TODO Allow ta/prof to edit assignment details
+
+*** [[./clients/web/src/pages/Submission.js][Submission]]
+
+Display the details of a single student submission.
+

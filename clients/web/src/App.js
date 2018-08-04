@@ -1,24 +1,47 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import { BrowserRouter, Route, Switch } from 'react-router-dom';
+//import logo from './logo.svg';
 import './App.css';
 
-class App extends Component {
-  state = { users: [] }
+import { Provider as Auth, PrivateRoute } from './components/Auth';
+import NavBar from './components/NavBar';
 
-  componentDidMount() {
-    fetch('/users')
-      .then(res => res.json())
-      .then(users => this.setState({ users }));
-  }
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Logout from './pages/Logout';
+import NotFound from './pages/NotFound';
+
+import Courses from './pages/Courses';
+import Course from './pages/Course';
+import Assignment from './pages/Assignment';
+import Submission from './pages/Submission';
+
+class App extends Component {
+
+  renderRoutes = () => (
+    <Switch>
+      <Route exact path="/" component={Home} />
+      <Route exact path="/login" component={Login} />
+      <Route exact path="/logout" component={Logout} />
+      <PrivateRoute exact path="/courses" component={Courses}/>
+      <PrivateRoute exact path="/course/:id" component={Course}/>
+      <PrivateRoute exact path="/assignment/:id" component={Assignment}/>
+      <PrivateRoute exact path="/submission/:id" component={Submission}/>
+      <Route component={NotFound} />
+    </Switch>
+  );
+
   render() {
     return (
       <div className="App">
-        <h1>Users</h1>
-        <ul>
-          {this.state.users.map(user =>
-            <li key={user.id}>{user.username} </li>
-          )}
-        </ul>  
+        <Auth>
+          <BrowserRouter>
+            <div>
+              <NavBar/>
+              <this.renderRoutes/>
+            </div>
+          </BrowserRouter>
+        </Auth>
       </div>
     );
   }

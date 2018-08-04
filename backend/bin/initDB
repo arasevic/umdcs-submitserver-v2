@@ -1,0 +1,247 @@
+#!/usr/bin/env node
+
+require('dotenv').config();
+const debug = require('debug')('backend:init');
+const util = require('../util');
+const db = require('../model');
+
+/**
+ * Initialize a testing DB
+ */
+
+db.connection.once('open', init);
+
+async function init() {
+  debug('Initializing test database...');
+  try {
+    await db.connection.dropDatabase();
+    const assignments = await initAssignments();
+    const courses = await initCourses(assignments);
+    const users = await initUsers(courses);
+    const subs = await initSubmissions(users, assignments);
+    debug('Initialization complete!');
+    /*
+    const nick = await db.model('User').findOne({ name: 'Nick' }).populate('courses.course');
+    debug(nick.courses);
+    debug(db.model('User').modelName);
+    */
+    process.exit();
+  } catch(err) {
+    debug('Error during initialization:', err);
+    process.exit(1);
+  }
+}
+
+function idOf(d) { return d._id; }
+
+function makeDates() {
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  var nextWeek = new Date();
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  return { 
+    yesterday, 
+    tomorrow, 
+    nextWeek
+  };
+}
+
+function makeSubsDates() {
+  const dates = makeDates();
+  var ret = {};
+  for (let key in dates) {
+    ret[key+'Min1'] = new Date(dates[key].getTime());
+    ret[key+'Min1'].setMinutes(ret[key+'Min1'].getMinutes() - 1);
+    ret[key+'Min2'] = new Date(dates[key].getTime());
+    ret[key+'Min2'].setMinutes(ret[key+'Min2'].getMinutes() - 2);
+    ret[key+'Add1'] = new Date(dates[key].getTime());
+    ret[key+'Add1'].setMinutes(ret[key+'Add1'].getMinutes() + 1);
+  }
+  return ret;
+}
+
+async function initSubmissions(users, assignments) {
+  const Subs = db.model('Submission');
+  const Assign = db.model('Assignment');
+  
+  const dates = makeSubsDates();
+
+  // 131: nikola and michele
+  const cmsc131 = assignments.cmsc131;
+  const a0cmsc131 = await Subs.insertMany([{
+    user: users.nikola._id,
+    date: dates.yesterdayMin2,
+    input: util.randomStr(10),
+    output: 'All tests passed!'
+  }, {
+    user: users.nikola._id,
+    date: dates.yesterdayMin1,
+    input: util.randomStr(10),
+    output: 'All tests passed!'
+  }, {
+    user: users.michele._id,
+    date: dates.yesterdayMin1,
+    input: util.randomStr(10),
+    output: 'Tests failed!'
+  }, {
+    user: users.michele._id,
+    date: dates.yesterdayAdd1,
+    input: util.randomStr(10),
+    output: 'All tests passed!'
+  }]);
+  cmsc131[0].submissions = a0cmsc131.map(idOf);
+  await cmsc131[0].save();
+
+  // 430 aleksandra and michele
+  const cmsc430 = assignments.cmsc430;
+  const a0cmsc430 = await Subs.insertMany([{
+    user: users.aleksandra._id,
+    date: dates.yesterdayMin2,
+    input: util.randomStr(10),
+    output: 'All tests passed!'
+  }, {
+    user: users.aleksandra._id,
+    date: dates.yesterdayMin1,
+    input: util.randomStr(10),
+    output: 'All tests passed!'
+  }, {
+    user: users.michele._id,
+    date: dates.yesterdayAdd1,
+    input: util.randomStr(10),
+    output: 'Tests failed!'
+  }]);
+  const a1cmsc430 = await Subs.insertMany([{
+    user: users.aleksandra._id,
+    date: dates.yesterdayAdd1,
+    input: util.randomStr(10),
+    output: 'All tests passed!'
+  }]);
+  cmsc430[0].submissions = a0cmsc430.map(idOf);
+  await cmsc430[0].save();
+  cmsc430[1].submissions = a1cmsc430.map(idOf);
+  await cmsc430[1].save();
+  
+}
+
+async function initAssignments() {
+  const Assign = db.model('Assignment')
+  const dates = makeDates();
+  const cmsc131 = await Assign.insertMany([{
+    name: 'Simple functions',
+    due: dates.yesterday,
+    visible: true
+  }, {
+    name: 'Trees, forests, and ML',
+    due: dates.nextWeek
+  }]);
+  const cmsc430 = await Assign.insertMany([{
+    name: 'Church encoder',
+    due: dates.yesterday,
+    visible: true
+  }, {
+    name: 'Desugaring, promises, exceptions',
+    due: dates.tomorrow,
+    visible: true
+  }]);
+  return { cmsc131, cmsc430 };
+}
+
+async function initCourses(assignments) {
+  const Course = db.model('Course');
+  const dates = makeDates();
+  const cmsc131 = await Course.create({
+    name: 'Fundamentals of Computer Science I',
+    number: 'cmsc131',
+    assignments: assignments.cmsc131.map(idOf)
+  });
+  const cmsc430 = await Course.create({
+    name: 'Introduction to Compilers',
+    number: 'cmsc430',
+    assignments: assignments.cmsc430.map(idOf)
+  });
+  return { cmsc131, cmsc430 };
+}
+
+async function initUsers(courses) {
+  const cmsc131 = courses.cmsc131;
+  const cmsc430 = courses.cmsc430;
+
+  const User = db.model('User');
+  
+  const nikola = await User.create({
+    name: 'Nikola',
+    username: 'nikola',
+    courses: [{
+      role: 'student',
+      course: cmsc131._id
+    }, {
+      role: 'ta',
+      course: cmsc430._id
+    }]
+  });
+  
+  const aleksandra = await User.create({
+    name: 'Aleksandra',
+    username: 'aleksandra',
+    courses: [{
+      role: 'student',
+      course: cmsc430._id
+    }]
+  });
+
+  const michele = await User.create({
+    name: 'Michele',
+    username: 'mca',
+    courses: [{
+      role: 'student',
+      course: cmsc131._id
+    }, {
+      role: 'student',
+      course: cmsc430._id
+    }]
+  });
+  
+  const thomas = await User.create({
+    name: 'Thomas Gilray',
+    username: 'tgilray',
+    courses: [{
+      role: 'prof',
+      course: cmsc430._id
+    }]
+  });
+  
+  const javran = await User.create({
+    name: 'Javran Cheng',
+    username: 'javran',
+    courses: [{
+      role: 'ta',
+      course: cmsc430._id
+    }]
+  });
+
+  const dvh = await User.create({
+    name: 'David Van Horn',
+    username: 'dvh',
+    courses: [{
+      role: 'prof',
+      course: cmsc131._id
+    }]
+  });
+
+  const nick = await User.create({
+    name: 'Nick',
+    username: 'labichn',
+    role: 'admin',
+    courses: [{
+      role: 'admin',
+      course: cmsc131._id
+    }, {
+      role: 'admin',
+      course: cmsc430._id
+    }]
+  });
+
+  return { nick, dvh, javran, thomas, aleksandra, nikola, michele };
+}
