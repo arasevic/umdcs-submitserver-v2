@@ -19,6 +19,15 @@ function randomNat(max) {
 	return Math.min(max-1, Math.floor(randbytes / maxDec * max));
 }
 
+// map over an object's values, or an object's keys and values
+function mapObj(o, f, g) {
+  const ret = {};
+  for (let k of Object.keys(o)) {
+    ret[g ? f(k) : k] = (g ? g : f)(o[k]);
+  }
+  return ret;
+}
+
 module.exports = {
-  randomStr, randomNat
+  randomStr, randomNat, mapObj
 };

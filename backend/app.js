@@ -4,9 +4,11 @@ const path = require('path');
 const logger = require('morgan');
 
 const cookieParser = require('./auth/cookies');
+
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const modelRouter = require('./routes/model');
+const submitRouter = require('./routes/submit');
 
 const app = express();
 
@@ -25,9 +27,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Index should eventually show an API definition
 app.use('/', indexRouter);
 
-
 app.use('/api', modelRouter);
 app.use('/api', authRouter);
+app.use('/api', submitRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -36,6 +38,7 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
+  console.log('Error:', err);
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

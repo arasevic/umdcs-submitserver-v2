@@ -8,6 +8,8 @@ require('dotenv').config();
 var app = require('../app');
 var debug = require('debug')('backend:server');
 var http = require('http');
+var db = require('../models');
+
 
 /**
  * Get port from environment and store in Express.
@@ -88,4 +90,5 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+  db.sequelize.authenticate().then(() => debug('Connected to DB!'));
 }

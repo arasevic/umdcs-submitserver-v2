@@ -2,8 +2,9 @@ const express = require('express');
 const bp = require('body-parser');
 const session = require('client-sessions');
 
-const db = require('../model');
+const db = require('../models');
 const cookies = require('../auth/cookies');
+const roles = require('../auth/roles');
 
 const router = new express.Router();
 
@@ -39,11 +40,29 @@ async function login(req, res) {
     res.sendStatus(400);
   } else {
     const { username } = req.body;
-    const user = await db.model('User').findOne({ username });
+    const user = await db.user.findOne({
+      where: { username },
+      attributes: { exclude: [ 'createdAt', 'updatedAt' ] },
+      include: [{
+        model: db.course,
+        attributes: { include: [ 'id' ] },
+        through: { attributes: [ 'role' ] }
+      }]
+    });
     if (!user) {
       res.sendStatus(401);
     } else {
-      cookies.setCookie(req, user);
+      const token = user.get({ plain: true });
+      if (token.role === roles.admin) {
+        const courses = await db.course.findAll({
+          attributes: [ 'id' ],
+          raw: true
+        });
+        courses.forEach(c => c.permission = { role: roles.admin });
+        token.courses = courses;
+      }
+      console.log('final token:', token);
+      cookies.setCookie(req, token);
       res.status(200).json(cookies.getCookie(req));
     }
   }

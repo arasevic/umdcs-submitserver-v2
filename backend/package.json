@@ -14,12 +14,15 @@
     "dotenv": "^6.0.0",
     "express": "~4.16.0",
     "http-errors": "~1.6.2",
-    "mongoose": "^5.2.6",
     "morgan": "~1.9.0",
     "npm": "^6.1.0",
-    "pug": "2.0.0-beta11"
+    "pg": "^7.4.3",
+    "pg-hstore": "^2.3.2",
+    "pug": "2.0.0-beta11",
+    "sequelize": "^4.38.0"
   },
   "devDependencies": {
-    "nodaemon": "0.0.5"
+    "nodaemon": "0.0.5",
+    "sequelize-cli": "^4.1.1"
   }
 }

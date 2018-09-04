@@ -11,16 +11,10 @@ const cookies = session({
 });
 
 /**
- * Set the request session cookie for some user
+ * Set the request session cookie
  */
-cookies.setCookie = (req, user) => {
-  const access = user.role === roles.admin
-    ? roles.admin
-    : user.courses.map(rc => ({
-      role: rc.role, course: rc.course._id
-    }));
-  const cookie = { access, id: user._id, name: user.name };
-  req.session.user = cookie;
+cookies.setCookie = (req, token) => {
+  req.session.user = token;
 };
 
 /**
@@ -28,19 +22,5 @@ cookies.setCookie = (req, user) => {
  */
 cookies.getCookie = (req) =>
   Boolean(req.session) && req.session.user;
-
-/**
- * Creates middleware that validates that the session cookie in the
- * incoming request satisfies some predicate `p'
- */
-cookies.validate = (p) => async (req, res, k) =>  {
-  const cookie = cookies.getCookie(req);
-  if (!cookie) res.sendStatus(401);
-  else {
-    const authorized = await p(req);
-    if (!authorized) res.sendStatus(403);
-    else k();
-  }
-};
 
 module.exports = cookies;
