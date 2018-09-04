@@ -4,8 +4,10 @@ import { withAuth, authType } from '../components/Auth';
 import * as model from '../components/model';
 import { getJSON } from '../crud';
 
+
 /**
- * List the classes to which the user has access
+ * List the classes to which the user has access. Requires the
+ * authentication context.
  */
 class Courses extends React.Component {
   static propTypes = {
@@ -19,7 +21,7 @@ class Courses extends React.Component {
 
   fetchState = () =>
     getJSON(`/api/user/${this.props.auth.token.id}`)
-    .then(doc => this.setState({ courses: doc.courses }))
+      .then(doc => this.setState({ courses: doc.courses }))
       .catch(err => this.setState({ error: err.message }))
 
   componentDidMount = async () => {
@@ -30,15 +32,16 @@ class Courses extends React.Component {
     this.state.error &&
       <p style={{color: 'red'}}>Error: { this.state.error }</p>;
 
-  renderCourse = ({ role, course }) =>
-    <li key={course._id}><model.CourseLink course={course}/></li>;
+  renderCourse = course =>
+    <li key={course.id}><model.CourseLink course={course}/></li>;
+
+  renderCourses = () => this.state.courses && 
+    <ul>{this.state.courses.map(this.renderCourse)}</ul>;
   
   render = () => (
     <div>
       <this.renderError/>
-      {this.state.courses
-        ? <ul>{this.state.courses.map(this.renderCourse)}</ul>
-        : <div/>}
+      <this.renderCourses/>
     </div>
   );
 }

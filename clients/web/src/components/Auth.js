@@ -15,11 +15,12 @@ export const Roles = {
   admin: 'admin'
 };
 
-export const roleAllows = (role, req) =>
-  req === Roles.student
-  || (req === Roles.ta && role !== Roles.student)
-  || (req === Roles.prof && role === Roles.admin)
-  || role === Roles.admin;
+export const roleAllows = (role, req) => {
+  return req === Roles.student
+    || (req === Roles.ta && role !== Roles.student)
+    || (req === Roles.prof && (role === Roles.admin || role === Roles.prof))
+    || role === Roles.admin;
+};
 
 export const roleType = ty.oneOf([
   'student',
@@ -34,19 +35,12 @@ export const tokenType = ty.oneOfType([
     false    // known to be unauthenticated
   ]),
   ty.shape({ // valid token from server
-    id: ty.string,
+    id: ty.number,
     name: ty.string,
-    access: ty.oneOfType([
-      roleType,
-      ty.arrayOf(ty.shape({
-        id: ty.string,
-        name: ty.string,
-        access: ty.arrayOf(ty.shape({
-          role: roleType,
-          course: ty.string
-        }))
-      }))
-    ])
+    courses: ty.arrayOf(ty.shape({
+      id: ty.number,
+      permission: ty.shape({ role: roleType })
+    }))
   })
 ]);
 
@@ -128,15 +122,15 @@ export class Provider extends Component {
 
   // Check locally to see if we're authorized to view
   // something allowed for the given role and course.
-  authorized = (role, course) => {
+  authorized = (reqRole, course) => {
     if (this.authenticated()) {
-      const access = this.state.token.access;
-      if (typeof access === 'string') {
-        return roleAllows(access, role);
+      const { courses, role } = this.state.token;
+      if (course) {
+        const access = courses.filter(c => c.id === parseInt(course, 10));
+        return access.length > 0
+          && roleAllows(access[0].permission.role, reqRole);
       } else {
-        const courseAccess = access.filter(a => a.course === course);
-        return courseAccess.length > 0
-          && roleAllows(courseAccess[0].role, role);
+        return roleAllows(role, reqRole);
       }
     } else return false;
   };

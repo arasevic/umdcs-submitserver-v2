@@ -10,11 +10,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Logout from './pages/Logout';
 import NotFound from './pages/NotFound';
-
 import Courses from './pages/Courses';
 import Course from './pages/Course';
 import Assignment from './pages/Assignment';
-import Submission from './pages/Submission';
 
 class App extends Component {
 
@@ -25,8 +23,7 @@ class App extends Component {
       <Route exact path="/logout" component={Logout} />
       <PrivateRoute exact path="/courses" component={Courses}/>
       <PrivateRoute exact path="/course/:id" component={Course}/>
-      <PrivateRoute exact path="/assignment/:id" component={Assignment}/>
-      <PrivateRoute exact path="/submission/:id" component={Submission}/>
+      <PrivateRoute exact path="/course/:id/:aid" component={Assignment}/>
       <Route component={NotFound} />
     </Switch>
   );

@@ -3,6 +3,12 @@ import { Redirect } from 'react-router-dom';
 
 import { withAuth, authType } from '../components/Auth';
 
+
+/**
+ * Log in using the authentication context.
+ * 
+ * NOTE: Only uses `username' to log in; the password is ignored.
+ */
 class Login extends React.Component {
 
   static propTypes = {

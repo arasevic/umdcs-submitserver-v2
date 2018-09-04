@@ -15,9 +15,9 @@ function recType(f) {
 }
 
 export var submissionType = ty.shape({
-  _id: ty.string,
+  id: ty.number,
   user: recType(() => userType),
-  date: ty.string,
+  submitted: ty.string,
   input: ty.string,
   output: ty.string
 });
@@ -32,7 +32,7 @@ SubmissionDesc.propTypes = {
 
 export function SubmissionLink(props) {
   return (
-    <Link to={`/submission/${props.submission._id}`}>
+    <Link to={`/submission/${props.submission.id}`}>
       {ifElse(props.children,
               <SubmissionDesc submission={props.submission}/>)}
     </Link>
@@ -43,11 +43,12 @@ SubmissionLink.propTypes = {
 };
 
 export var assignmentType = ty.shape({
-  _id: ty.string,
+  id: ty.number,
+  courseId: ty.number,
   name: ty.string,
   due: ty.string,
   visible: ty.bool,
-  submissions: ty.arrayOf(ty.oneOfType([ ty.string, submissionType ]))
+  submissions: ty.arrayOf(submissionType)
 });
 
 export function AssignmentDesc(props) {
@@ -58,11 +59,12 @@ AssignmentDesc.propTypes = {
 };
 
 export function AssignmentLink(props) {
+  const { id, courseId } = props.assignment;
   return (
-    <Link to={`/assignment/${props.assignment._id}`}>
+    <Link to={`/course/${courseId}/${id}`}>
       {ifElse(props.children,
               <AssignmentDesc assignment={props.assignment}/>)}
-    </Link>
+     </Link>
   );
 }
 AssignmentLink.propTypes = {
@@ -70,10 +72,10 @@ AssignmentLink.propTypes = {
 };
 
 export var courseType = ty.shape({
-  _id: ty.string,
+  id: ty.number,
   name: ty.string,
   number: ty.string,
-  assignments: ty.arrayOf(ty.oneOfType([ ty.string, assignmentType ]))
+  assignments: ty.arrayOf(assignmentType)
 });
 
 export function CourseDesc(props) {
@@ -86,7 +88,7 @@ CourseDesc.propTypes = {
 
 export function CourseLink(props) {
   return (
-    <Link to={`/course/${props.course._id}`}>
+    <Link to={`/course/${props.course.id}`}>
       {ifElse(props.children, <CourseDesc course={props.course}/>)}
     </Link>
   );
@@ -96,14 +98,11 @@ CourseLink.propTypes = {
 };
 
 export var userType = ty.shape({
-  _id: ty.string,
+  id: ty.number,
   name: ty.string,
   username: ty.string,
   role: roleType,
-  courses: ty.arrayOf(ty.shape({
-    role: roleType,
-    course: ty.oneOfType([ ty.string, courseType ])
-  }))
+  courses: ty.arrayOf(courseType)
 });
 
 export function UserDesc(props) {
@@ -116,7 +115,7 @@ UserDesc.propTypes = {
 
 export function UserLink(props) {
   return (
-    <Link to={`/user/${props.user._id}`}>
+    <Link to={`/user/${props.user.id}`}>
       {ifElse(props.children, <UserDesc user={props.user}/>)}
     </Link>
   );

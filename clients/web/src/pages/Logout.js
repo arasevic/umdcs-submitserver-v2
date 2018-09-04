@@ -2,6 +2,10 @@ import React from 'react';
 import { Redirect } from 'react-router-dom';
 import { withAuth } from '../components/Auth';
 
+
+/**
+ * Log out using the authentication context.
+ */
 class Logout extends React.Component {
   state = {
     redirect: false,
