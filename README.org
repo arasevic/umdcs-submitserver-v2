@@ -1,4 +1,69 @@
 
+* Quick start for local development
+
+(Install PostgreSQL,) set up the PostgreSQL database.
+
+#+BEGIN_SRC sh :eval no
+  su                           # log in as root
+  su -l postgres               # log in as postgres user
+  createuser submitserver
+  createdb -O submitserver umdcs-submitserver-v2-dev
+#+END_SRC
+
+Install the =backend= node dependencies.
+
+#+BEGIN_SRC sh :eval no
+  cd backend/
+  npm install
+#+END_SRC
+
+Define the tables and seed the development DB.
+
+#+BEGIN_SRC sh :eval no
+  cd backend/
+  ./node_modules/.bin/sequelize db:migrate
+  ./node_modules/.bin/sequelize db:seed:all
+#+END_SRC
+
+Start the backend API.
+
+#+BEGIN_SRC sh :eval no
+  cd backend/
+  npm start
+#+END_SRC
+
+Install the =web client= node dependencies.
+
+#+BEGIN_SRC sh :eval no
+  cd clients/web/
+  npm install
+#+END_SRC
+
+Start the web client.
+
+#+BEGIN_SRC sh :eval no
+  cd clients/web/
+  npm start
+#+END_SRC
+
+Log in to web client. The password field of the login page is
+ignored, since Shibboleth authentication is not yet integrated,
+so to log in enter any of the example users' usernames.
+
+Example users:
+|----------------+------------+----------------------------------|
+| Name           | Username   | Permissions                      |
+|----------------+------------+----------------------------------|
+| Nikola         | nikola     | cmsc131-student, cmsc430-ta      |
+| Aleksandra     | aleksandra | cmsc430-student                  |
+| Michele        | mca        | cmsc131-student, cmsc430-student |
+| Thomas Gilray  | tgilray    | cmsc430-prof                     |
+| Javran Cheng   | javran     | cmsc430-ta                       |
+| David Van Horn | dvh        | cmsc131-prof                     |
+| Nick           | labichn    | admin                            |
+|----------------+------------+----------------------------------|
+
+
 * Server
 
 ** Tasks
@@ -6,15 +71,6 @@
 *** TODO Integrate Shibboleth authentication
 
 Who is our point of contact to integrate UMD auth?
-
-*** TODO Student submission
-
-**** Manually submitted code
-
-Where should the submitted archives be stored? MongoDB has a
-16MB limit on document size, so it won't do for all purposes.
-
-**** GitLab integration
 
 *** TODO Testing workflow
 
@@ -26,30 +82,84 @@ Where should the submitted archives be stored? MongoDB has a
 
 ** Environment Variables
 
+*** For Production/Staging
+
 [[./backend/.env][Set in the backend dotenv file]]
 
 These environment variables must be set:
-- PORT -- the port on which to run the server
-- DB_URI -- the MongoDB URI
+- PORT           -- the port on which to run the server
+- DB_URI         -- the MongoDB URI
 - SESSION_SECRET -- secret used by client-sessions
-- DEBUG -- * for full debug logging, empty for none
+- DEBUG          -- * for full debug logging, empty for none
+- POSTGRES_USER  -- user with read/write access to Postgres DB
+- POSTGRES_PASS  -- password for Postgres DB
+- POSTGRES_DB    -- Postgres DB name
+- POSTGRES_HOST  -- Postgres DB host URI (e.g. 127.0.0.1)
+- POSTGRES_PORT  -- Postgres DB port (e.g. 5432)
+
+*** For local development
+
+The Postgres-specific environment variables are configured in
+the Sequelize model configuration file: [[./backend/config/config.js][here]].
 
 ** Persistent Data
 
-The submit server data is stored in MongoDB as the following
-collections.
+The submit server data is stored in a PostgreSQL database.
 
-The schemata are defined [[./backend/model/schema.js][here]].
+*** Initialization
 
-The DB connection is initialized [[./backend/model/index.js][here]].
+We connect to the submit server database
+=umdcs-submitserver-v2-{dev,test,prod}= as the user
+=submitserver=. The instructions below do not include a
+password, though a password should be used in the production
+environment.
 
-Data for use in development is initialized [[./backend/bin/initDB][here]]
-  and executed with `npm run init'.
+**** Creating the submit server DB user and databases
 
-*** User
+These commands should be run by the cluster owner (default:
+=postgres=).
 
-A user has a username, a (display) name, a default role, and
-an array of courses to which they have access.
+#+BEGIN_SRC sh :eval no
+  createuser -P submitserver
+  createdb -O submitserver umdcs-submitserver-v2-dev  # if in dev environment
+  createdb -O submitserver umdcs-submitserver-v2-test # if in test environment
+  createdb -O submitserver umdcs-submitserver-v2-prod # if in prod environment
+#+END_SRC
+
+**** Table initialization via Sequelize CLI
+
+The configuration for the Sequelize ORM is [[./backend/config/config.json][here]], which
+references environment variables defined in the =dotenv= file
+[[./backend/.env][here]].
+
+To initialize the submit server database tables, run the
+following command from the =backend= directory (after
+installing the node modules).
+
+#+BEGIN_SRC sh :eval no
+  ./node_modules/.bin/sequelize db:migrate
+#+END_SRC
+
+To seed a development database with test data, run the
+following command.
+
+#+BEGIN_SRC sh :eval no
+  ./node_modules/.bin/sequelize db:seed:all
+#+END_SRC
+
+**** Future table migrations
+
+To manage table schema changes, follow the Sequelize
+documentation that pertains to Migrations:
+http://docs.sequelizejs.com/manual/tutorial/migrations.html.
+
+
+*** [[./backend/models/user.js][User]]
+
+A user has a username, a (display) name, a global role, and an
+array of courses to which they have access. Only admins use the
+global role field, other users permissions are stored as rows
+in the Permissions table.
 
 The User schema will likely need to be extended to support
 shibboleth authentication, the username is a stand-in for any
@@ -70,12 +180,12 @@ Since some students may TA for one course and be enrolled as a
 student in another, roles must be defined on a per-course
 basis.
 
-*** Course
+*** [[./backend/models/course.js][Course]]
 
 A course has a name, course number (e.g. 'cmsc430'), and an
 array of defined assignments.
 
-*** Assignment
+*** [[./backend/models/assignment.js][Assignment]]
 
 An assignment has a name, a due date, a boolean flag listing
 whether the assignment is already visible to students, and an
@@ -85,20 +195,20 @@ Assignments will also need to store information about how
 testing will be performed on student submissions, such as a
 reference to a docker instance stored in our private registry.
 
-*** Submission
+*** [[./backend/models/submission.js][Submission]]
 
 A submission has an associated user, the date at which the
 submission was made, the submitted input, and the output as a
 result of testing the submission.
 
-The submission input will be one of:
-- GitLab commit which incited the submission event, or a
-- File reference to a manually submitted archive.
+The input field is the raw binary data of the uploaded file.
 
-TODO:
-Since MongoDB has a maximum document size of 16MB, manually
-submitted archives must be stored external to the
-database.
+*** [[./backend/models/permission.js][Permissions]]
+
+A permissions entry has a user ID, course ID, and role. This
+table defines the role with which some user has access to some
+course.
+
 
 ** Routes
 
@@ -121,35 +231,16 @@ As currently implemented, the '/api/login' route allows login
 by username alone, as long as the username matches some
 existing user. This is for development purposes only.
 
-*** [[./backend/routes/model.js][Model]]
+*** [[./backend/routes/model/index.js][Model]]
 
 The model CRUD routes are dynamically generated based on the
-Mongoose models.
+Sequelize models.
 
-Still TODO: configure validation middleware to ensure only
-authorized users may use certain verbs.
+
 
 * Client
 
 ** Tasks
-
-*** Client operations on persistent state
-
-**** TODO Admins
-
-Allow admins to:
-- define classes and users
-
-Can the users be imported automatically from some
-authoritative source, i.e. grades.cs.umd.edu?
-
-**** TODO Professors
-
-Define assignments, TAs.
-
-**** TODO Students
-
-Manually submit code to some assignment
 
 *** TODO Shibboleth authentication integration
 
@@ -179,19 +270,16 @@ made by an unauthenticated user.
 
 Displays the courses to which a user has access.
 
-*** [[./clients/web/src/pages/Course.js][Course]]
+*** [[./clients/web/src/pages/Course/index.js][Course]]
 
-Displays the details of a single course.
+Displays the details of a single course. Students can see all
+visible assignments. Professors and TAs can see all
+assignments (both visible and invisible) and a form to create
+new assignments.
 
-**** TODO Allow ta/prof to define assignments, edit course details
+*** [[./clients/web/src/pages/Assignment/index.js][Assignment]]
 
-*** [[./clients/web/src/pages/Assignment.js][Assignment]]
-
-Display the details of a single assignment.
-
-**** TODO Allow ta/prof to edit assignment details
-
-*** [[./clients/web/src/pages/Submission.js][Submission]]
-
-Display the details of a single student submission.
-
+Display the details of a single assignment. Students can see
+and download all their past submissions. Professors and TAs can
+see and download all student submissions, as well as edit
+assignment details.
