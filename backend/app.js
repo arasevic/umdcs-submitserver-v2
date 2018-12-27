@@ -2,13 +2,18 @@ const createError = require('http-errors');
 const express = require('express');
 const path = require('path');
 const logger = require('morgan');
+const passport = require('passport');
+const session = require('express-session');
+const bodyParser = require('body-parser');
 
 const cookieParser = require('./auth/cookies');
 
-const indexRouter = require('./routes/index');
-const authRouter = require('./routes/auth');
+const authFunc = require('./routes/auth');
 const modelRouter = require('./routes/model');
 const submitRouter = require('./routes/submit');
+
+const caslogin = require('./auth/cas-login');
+const jwt = require('./auth/jwt');
 
 const app = express();
 
@@ -18,17 +23,23 @@ app.set('view engine', 'pug');
 
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(session({secret:"thisisasecret"}));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(caslogin);
+passport.use(jwt);
+
 app.set('trust proxy', 1);
-app.use(cookieParser);
 app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Index should eventually show an API definition
-app.use('/', indexRouter);
+
+//app.use('/', indexRouter);
+app.use('/login', authFunc);
 
 app.use('/api', modelRouter);
-app.use('/api', authRouter);
 app.use('/api', submitRouter);
 
 // catch 404 and forward to error handler

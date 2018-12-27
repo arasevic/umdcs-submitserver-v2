@@ -5,7 +5,7 @@ const roles = require('./roles');
 // Exposes req.session in incoming requests
 const cookies = session({
   cookieName: 'session',
-  secret: process.env.SESSION_SECRET,
+  secret: "thisisasecret",
   duration: 48 * 60 * 60 * 1000,
   activeDuration: 5 * 60 * 1000
 });

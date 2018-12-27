@@ -3,8 +3,9 @@ const Sequelize = require('sequelize');
 
 module.exports = {
   development: {
+    user: 'submitserver',
     username: 'submitserver',
-    password: null,
+    password: 'password',
     database: 'umdcs-submitserver-v2-dev',
     host: '127.0.0.1',
     port: 5432,

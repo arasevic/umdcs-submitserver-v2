@@ -15,7 +15,7 @@ var db = require('../models');
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT);
+var port = 3001;//normalizePort(process.env.PORT);
 app.set('port', port);
 
 /**
@@ -89,6 +89,6 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
-  db.sequelize.authenticate().then(() => debug('Connected to DB!'));
+  console.log('Listening on ' + bind);
+  db.sequelize.authenticate().then(() => console.log('Connected to DB!'));
 }

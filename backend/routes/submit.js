@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
+const passport = require('passport');
 
 const { getCookie } = require('../auth/cookies');
 const roles = require('../auth/roles');
@@ -123,7 +124,7 @@ const download = (req, res) => {
 
 const router = new express.Router();
 
-router.post('/submit/:cid/:aid', canUpload, upload.single('file'), persist);
-router.get('/submit/:cid/:aid/:sid', canDownload, download);
+router.post('/submit/:cid/:aid', passport.authenticate('jwt', {session: false}), upload.single('file'), persist);
+router.get('/submit/:cid/:aid/:sid', passport.authenticate('jwt', {sesssion: false}), canDownload, download);
 
 module.exports = router;

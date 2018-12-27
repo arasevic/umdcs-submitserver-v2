@@ -6,7 +6,7 @@ import { withAuth, authType } from '../components/Auth';
 
 /**
  * Log in using the authentication context.
- * 
+ *
  * NOTE: Only uses `username' to log in; the password is ignored.
  */
 class Login extends React.Component {
@@ -31,22 +31,26 @@ class Login extends React.Component {
   };
 
   handleLogin = async (event) => {
-    try {
-      event.preventDefault();
-      this.setState({ error: false });
-      const { username } = this.state;
-      const success = await this.props.auth.login(username);
-      this.setState({ success });
-    } catch (err) {
-      switch (err.message) {
-      case '401':
-        this.setState({ error: `Incorrect user or password` });
-        break;
-      default:
-        this.setState({ error: `Unexpected response: ${err}` });
-        break;
-      }
-    }
+    event.preventDefault();
+    localStorage.setItem('lastRoute', window.location.pathname);
+
+    window.location.href = `http://localhost:3001/login`;
+    // try {
+    //   event.preventDefault();
+    //   this.setState({ error: false });
+    //   const { username } = this.state;
+    //   const success = await this.props.auth.login(username);
+    //   this.setState({ success });
+    // } catch (err) {
+    //   switch (err.message) {
+    //   case '401':
+    //     this.setState({ error: `Incorrect user or password` });
+    //     break;
+    //   default:
+    //     this.setState({ error: `Unexpected response: ${err}` });
+    //     break;
+    //   }
+    // }
   };
 
   renderForm = () => (
@@ -81,11 +85,11 @@ class Login extends React.Component {
     return <Redirect to={from}/>;
   }
 
-  render = () => 
+  render = () =>
     this.state.success
     ? this.renderSuccess()
     : this.renderForm();
-  
+
 }
 
 export default withAuth(Login);

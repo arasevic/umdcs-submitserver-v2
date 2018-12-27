@@ -30,7 +30,7 @@ export const roleType = ty.oneOf([
 ]);
 
 export const tokenType = ty.oneOfType([
-  ty.oneOf([ 
+  ty.oneOf([
     null,    // unknown authentication status (before GET at /api/check)
     false    // known to be unauthenticated
   ]),
@@ -61,7 +61,7 @@ export class Provider extends Component {
   // state briefly immediately but rerender if authenticated? Depends
   // on the auth turnaround? What if the server's down? Maybe it
   // should be a technical difficulties page?
-  render = () => 
+  render = () =>
     this.state.token === null
     ? <div/>
     : (
@@ -69,7 +69,7 @@ export class Provider extends Component {
         {this.props.children}
       </Context.Provider>
     ) ;
-  
+
   login = async (username, password) => {
     const res = await fetch(LOGIN_PATH, {
       method: 'POST',
@@ -93,8 +93,8 @@ export class Provider extends Component {
    * Otherwise sets token to false
    */
   check = async () => {
-    const res = await fetch(CHECK_PATH, { credentials: 'same-origin' });
-    const token = res.status === 200 ? await res.json() : false;
+    //const res = await fetch(CHECK_PATH, { credentials: 'same-origin' });
+    const token = false;//res.status === 200 ? await res.json() : false;
     this.setState({ token });
     return this.authenticated();
   };
